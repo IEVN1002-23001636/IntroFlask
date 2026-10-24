@@ -1,52 +1,55 @@
 from flask import Flask, jsonify, request
 from flask_mysqldb import MySQL
 from flask_cors import CORS
-
 from config import config
-
+ 
 app = Flask(__name__)
-
 CORS(app)
-
-@app.route("/alumnos", methods=['GET'])
-def lista_alumnos():
-    try:
-        cursor = con.connection.cursor()
-        sql = "select * from alumnos"
-        cursor.execute(sql)
-        datos = cursor.fetchall()
-        alumnos = []
-        for fila in datos:
-            alumno = {"matricula": fila[0], "nombre": fila[1],
-                      "apaterno": fila[2], "amaterno": fila[3],
-                      "correo": fila[4]}
-            alumnos.append(alumno)
-        return jsonify({'alumnos': alumnos, 'mensaje': 'Lista de alumnos',
-                        'exito': True})
-
-    except Exception as ex:
-        return jsonify({"message": "error {}".format(ex), 'exito': False})
-
+ 
 con = MySQL(app)
-
+ 
 def leer_alumnos_bd(matricula):
     try:
         cursor = con.connection.cursor()
         sql = "SELECT * FROM alumnos WHERE matricula = %s"
         cursor.execute(sql, (matricula,))
         datos = cursor.fetchall()
-
+ 
         if datos:
-            alumno = {"matricula": datos[0][0], "nombre": datos[0][1],
-                      "apaterno": datos[0][2], "amaterno": datos[0][3],
-                      "correo": datos[0][4]}
+            alumno = {
+                "matricula": datos[0][0],
+                "nombre": datos[0][1],
+                "apaterno": datos[0][2],
+                "amaterno": datos[0][3],
+                "correo": datos[0][4]
+            }
             return alumno
-
         else:
             return None
     except Exception as ex:
         raise ex
-
+ 
+@app.route("/alumnos", methods=['GET'])
+def lista_alumnos():
+    try:
+        cursor = con.connection.cursor()
+        sql = "SELECT * FROM alumnos"
+        cursor.execute(sql)
+        datos = cursor.fetchall()
+        alumnos = []
+        for fila in datos:
+            alumno = {
+                "matricula": fila[0],
+                "nombre": fila[1],
+                "apaterno": fila[2],
+                "amaterno": fila[3],
+                "correo": fila[4]
+            }
+            alumnos.append(alumno)
+        return jsonify({'alumnos': alumnos, 'mensaje': 'Lista de alumnos', 'exito': True})
+    except Exception as ex:
+        return jsonify({"message": "error {}".format(ex), 'exito': False})
+ 
 @app.route("/alumnos/<mat>", methods=['GET'])
 def leer_alumnos(mat):
     try:
@@ -55,11 +58,9 @@ def leer_alumnos(mat):
             return jsonify({'alumnos': alumno, 'mensaje': 'Alumno encontrado', 'exito': True})
         else:
             return jsonify({'alumnos': alumno, 'mensaje': 'Alumno no encontrado', 'exito': False})
-
     except Exception as ex:
         return jsonify({"message": "error {}".format(ex), 'exito': False})
-
-
+ 
 @app.route("/alumnos", methods=['POST'])
 def registro_alumnos():
     try:
@@ -69,24 +70,25 @@ def registro_alumnos():
         else:
             cursor = con.connection.cursor()
             sql = """INSERT INTO alumnos (matricula, nombre, apaterno, amaterno, correo) VALUES (%s, %s, %s, %s, %s)"""
-            cursor.execute(sql, (request.json['matricula'],
-                                 request.json['nombre'],
-                                 request.json['apaterno'],
-                                 request.json['amaterno'],
-                                 request.json['correo']))
+            cursor.execute(sql, (
+                request.json['matricula'],
+                request.json['nombre'],
+                request.json['apaterno'],
+                request.json['amaterno'],
+                request.json['correo']
+            ))
             con.connection.commit()
             return jsonify({"message": "Ya quedo perro", 'exito': True})
     except Exception as ex:
         return jsonify({"message": "error {}".format(ex), 'exito': False})
-
+ 
 @app.route("/alumnos/<mat>", methods=['PUT'])
 def actualizar_curso(mat):
     try:
         alumno = leer_alumnos_bd(mat)
-        if alumno != None:
+        if alumno is not None:
             cursor = con.connection.cursor()
-            sql = """UPDATE alumnos SET nombre=%s,
-            apaterno=%s, amaterno=%s, correo=%s WHERE matricula=%s"""
+            sql = """UPDATE alumnos SET nombre=%s, apaterno=%s, amaterno=%s, correo=%s WHERE matricula=%s"""
             cursor.execute(sql, (
                 request.json['nombre'],
                 request.json['apaterno'],
@@ -96,12 +98,28 @@ def actualizar_curso(mat):
             ))
             con.connection.commit()
             return jsonify({"message": "Alumno Actualizado, mi perrito", 'exito': True})
-        except Exception as ex:
-            return jsonify({"message": "error {}".format(ex), 'exito': False})
-
+        else:
+            return jsonify({"message": "Alumno no encontrado para actualizar", 'exito': False})
+    except Exception as ex:
+        return jsonify({"message": "error {}".format(ex), 'exito': False})
+ 
+@app.route("/alumnos/<mat>", methods=['DELETE'])
+def eliminar_alumno(mat):
+    try:
+        alumno=leer_alumnos_bd(mat)
+        if alumno != None:
+            cursor=con.connection.cursor()
+            sql="DELETE FROM alumnos WHERE matricula = {0}".format()
+            cursor.exacute(sql)
+            con.connection.commit()
+            return jsonify({'mensaje': "alumno no encontrado", 'exito': False})
+ 
+    except Exception as ex:
+        return jsonify({'mensaje': "Error {0}".format(ex),'exito': False})
+ 
 def pagina_no_encontrada(error):
     return "<h1>Pagina no encontrada</h1>"
-
+ 
 if __name__ == '__main__':
     app.config.from_object(config['development'])
     app.register_error_handler(404, pagina_no_encontrada)
